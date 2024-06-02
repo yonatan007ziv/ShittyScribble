@@ -4,35 +4,47 @@ namespace Server.Components;
 
 internal static class DatabaseHandler
 {
-	private const string connString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=""D:\Code\VS Community\Scribble\Server\Components\Sql\Database.mdf"";Integrated Security=True";
-	private readonly static SqlConnection conn = new SqlConnection(connString);
+	private readonly static SqlConnection conn = new SqlConnection(Settings.Configuration.ConnectionString);
 
 	public static bool UsernameExists(string username)
 	{
+		string sql = @"SELECT COUNT(*) FROM [Users] WHERE Username = @Username";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"SELECT Count(Username) FROM [Users] WHERE Username='{username}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
 
 		conn.Open();
-		int result = (int)cmd.ExecuteScalar();
+		int count = (int)cmd.ExecuteScalar();
 		conn.Close();
-		return result > 0;
+		return count > 0;
 	}
 
 	public static bool EmailExists(string email)
 	{
+		string sql = @"SELECT COUNT(*) FROM [Users] WHERE Email = @Email";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"SELECT Count(Email) FROM [Users] WHERE Email='{email}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Email", email);
 
 		conn.Open();
-		int result = (int)cmd.ExecuteScalar();
+		int count = (int)cmd.ExecuteScalar();
 		conn.Close();
-		return result > 0;
+		return count > 0;
 	}
 
 	public static string GetSaltedPasswordHash(string username)
 	{
+		string sql = @"SELECT SaltedPasswordHash FROM [Users] WHERE Username = @Username";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"SELECT SaltedPasswordHash FROM [Users] WHERE Username='{username}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
+
 		conn.Open();
 		string result = (string)cmd.ExecuteScalar();
 		conn.Close();
@@ -41,8 +53,13 @@ internal static class DatabaseHandler
 
 	public static string GetPasswordSalt(string username)
 	{
+		string sql = @"SELECT PasswordSalt FROM [Users] WHERE Username = @Username";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"SELECT PasswordSalt FROM [Users] WHERE Username='{username}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
+
 		conn.Open();
 		string result = (string)cmd.ExecuteScalar();
 		conn.Close();
@@ -51,26 +68,47 @@ internal static class DatabaseHandler
 
 	public static void InsertUser(string username, string email, string saltedPasswordHash, string passwordSalt)
 	{
+
+		string sql = @"INSERT INTO [Users] (Username, Email, SaltedPasswordHash, PasswordSalt, TemporarySaltedPasswordHash) VALUES (@Username, @Email, @SaltedPasswordHash, @PasswordSalt, '')";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"INSERT INTO [Users] (Username, Email, SaltedPasswordHash, PasswordSalt, TemporarySaltedPasswordHash) VALUES ('{username}', '{email}', '{saltedPasswordHash}', '{passwordSalt}', '')";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
+		cmd.Parameters.AddWithValue("@Email", email);
+		cmd.Parameters.AddWithValue("@SaltedPasswordHash", saltedPasswordHash);
+		cmd.Parameters.AddWithValue("@PasswordSalt", passwordSalt);
+
 		conn.Open();
-		cmd.ExecuteScalar();
+		cmd.ExecuteNonQuery();
 		conn.Close();
 	}
 
 	public static void UpdateTemporaryHash(string username, string saltedPasswordHash)
 	{
+
+		string sql = @"UPDATE [Users] SET TemporarySaltedPasswordHash = @SaltedPasswordHash WHERE Username = @Username";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"UPDATE [Users] SET TemporarySaltedPasswordHash = '{saltedPasswordHash}' WHERE Username = '{username}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
+		cmd.Parameters.AddWithValue("@SaltedPasswordHash", saltedPasswordHash);
+
 		conn.Open();
-		cmd.ExecuteScalar();
+		cmd.ExecuteNonQuery();
 		conn.Close();
 	}
 
 	public static string GetTemporaryHash(string username)
 	{
+		string sql = @"SELECT TemporarySaltedPasswordHash FROM [Users] WHERE Username = @Username";
+
 		SqlCommand cmd = conn.CreateCommand();
-		cmd.CommandText = $"SELECT TemporarySaltedPasswordHash FROM [Users] WHERE Username='{username}'";
+		cmd.CommandText = sql;
+
+		cmd.Parameters.AddWithValue("@Username", username);
+
 		conn.Open();
 		string result = (string)cmd.ExecuteScalar();
 		conn.Close();

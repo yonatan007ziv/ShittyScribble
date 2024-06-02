@@ -29,7 +29,8 @@ internal class TcpClientHandler
 		{
 			await client.ConnectAsync(System.Net.IPAddress.Parse(ip), port);
 			return await InitializeEncryption();
-		} catch { return false; }
+		}
+		catch { return false; }
 	}
 
 	private async Task<bool> EstablishEncryption()
@@ -155,28 +156,20 @@ internal class TcpClientHandler
 		Array.Copy(length, 0, prefixedBuffer, 0, sizeof(int));
 		Array.Copy(writeBuffer, 0, prefixedBuffer, sizeof(int), writeBuffer.Length);
 
-		try
-		{
-			await networkStream.WriteAsync(prefixedBuffer, disconnectedCts.Token);
-		}
-		catch { throw; }
+		await networkStream.WriteAsync(prefixedBuffer, disconnectedCts.Token);
 	}
 
 	public async Task<byte[]> UnsafeReadBytes()
 	{
 		byte[] readBufer;
 		int bytesRead;
-		try
-		{
-			// Reads 4 Bytes Indicating Message Length
-			byte[] lengthBuffer = new byte[4];
-			await networkStream.ReadAsync(lengthBuffer, disconnectedCts.Token);
+		// Reads 4 Bytes Indicating Message Length
+		byte[] lengthBuffer = new byte[4];
+		await networkStream.ReadAsync(lengthBuffer, disconnectedCts.Token);
 
-			int length = BitConverter.ToInt32(lengthBuffer);
-			readBufer = new byte[length];
-			bytesRead = await networkStream.ReadAsync(readBufer, disconnectedCts.Token);
-		}
-		catch { throw; }
+		int length = BitConverter.ToInt32(lengthBuffer);
+		readBufer = new byte[length];
+		bytesRead = await networkStream.ReadAsync(readBufer, disconnectedCts.Token);
 
 		if (bytesRead == 0)
 			throw new Exception();

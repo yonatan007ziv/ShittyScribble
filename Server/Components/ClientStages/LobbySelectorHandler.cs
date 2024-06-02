@@ -1,22 +1,19 @@
-﻿
-using System.Reflection;
-
-namespace Server.Components.ClientStages;
+﻿namespace Server.Components.ClientStages;
 
 internal static class LobbySelectorHandler
 {
 	private static int currentLobbyId;
 	private static readonly List<LobbySelectorClientHandler> clients = new List<LobbySelectorClientHandler>();
 
-    static LobbySelectorHandler()
-    {
+	static LobbySelectorHandler()
+	{
 		Lobby.OnLobbiesRefresh += ResendLobbies;
 	}
 
 	private static void ResendLobbies()
 	{
-        Console.WriteLine("Resending lobbies...");
-        foreach (LobbySelectorClientHandler client in clients)
+		Console.WriteLine("Resending lobbies...");
+		foreach (LobbySelectorClientHandler client in clients)
 			_ = client.tcpClientHandler.WriteMessage(GetLobbiesRepresentation());
 	}
 
@@ -100,7 +97,6 @@ internal static class LobbySelectorHandler
 				$")";
 		}
 
-        Console.WriteLine(lobbyModelsRepresentation);
-        return lobbyModelsRepresentation;
+		return lobbyModelsRepresentation;
 	}
 }

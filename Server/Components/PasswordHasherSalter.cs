@@ -10,15 +10,15 @@ internal static class PasswordHasherSalter
 	private static readonly int saltLength;
 
 	static PasswordHasherSalter()
-    {
+	{
 		saltLength = hasher.HashSize;
 	}
 
-    public static string RandomSalt()
+	public static string RandomSalt()
 	{
 		const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 		StringBuilder res = new StringBuilder();
-		for(int i = 0; i < saltLength; i++)
+		for (int i = 0; i < saltLength; i++)
 			res.Append(valid[random.Next(valid.Length)]);
 		return res.ToString();
 	}

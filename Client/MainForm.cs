@@ -18,6 +18,8 @@ namespace Client
 		{
 			Controls.Clear();
 			Controls.Add(control);
+
+			Size = control.Size + new Size(25, 25);
 		}
 	}
 }

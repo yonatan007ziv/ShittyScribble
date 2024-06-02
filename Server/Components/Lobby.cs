@@ -1,5 +1,6 @@
 ﻿using Server.Components.ClientStages;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Server.Components;
 
@@ -79,7 +80,7 @@ internal class Lobby
 		PeriodicHostAliveCheck();
 	}
 
-	private async void DecodePlayerMessage(GameClientHandler tcpClientHandler, string msg)
+	private async Task DecodePlayerMessage(GameClientHandler tcpClientHandler, string msg)
 	{
 		// Host wants to start
 		if (msg.Contains("StartGame") && tcpClientHandler.tcpClientHandler == host)
@@ -122,16 +123,20 @@ internal class Lobby
 
 			Console.WriteLine($"Chose word: {currentWord}");
 		}
-		else if (msg.Contains("SendingFrame") && tcpClientHandler == currentPlayerTurn)
+		else if (msg.Contains("SendingFrame"))
 		{
 			byte[]? imageBytes = await tcpClientHandler.tcpClientHandler.ReadBytes();
 			if (imageBytes == null)
+			{
+				await Console.Out.WriteLineAsync("shit");
 				return;
+			}
 
 			foreach (GameClientHandler player in players)
 			{
-				if (player == tcpClientHandler)
+				if (player == currentPlayerTurn)
 					continue;
+
 				_ = player.tcpClientHandler.WriteMessage("SendingFrame");
 				_ = player.tcpClientHandler.WriteBytes(imageBytes);
 			}
@@ -155,7 +160,7 @@ internal class Lobby
 
 		RunRound(timeToDraw, numOfRounds);
 	}
-	
+
 	private async void RunRound(int timeToDraw, int numOfRounds)
 	{
 		if (numOfRounds == 0)
@@ -198,17 +203,26 @@ internal class Lobby
 			await player.tcpClientHandler.WriteMessage("EnableCanvas");
 
 			// Timer to draw
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+			int prevElapsedSeconds = 0;
+
 			while (timeToDraw >= 0)
 			{
-				foreach (GameClientHandler playerA in playersArr)
-					_ = playerA.tcpClientHandler.WriteMessage($"RemainingSeconds:{timeToDraw}");
-				try
-				{
-					await Task.Delay(1000, skipRoundCts.Token);
-				}
-				catch { break; }
+				if (skipRoundCts.IsCancellationRequested)
+					break;
 
-				timeToDraw--;
+				if (stopwatch.Elapsed.Seconds != prevElapsedSeconds)
+				{
+					foreach (GameClientHandler playerA in playersArr)
+						_ = playerA.tcpClientHandler.WriteMessage($"RemainingSeconds:{timeToDraw}");
+
+					prevElapsedSeconds = stopwatch.Elapsed.Seconds;
+					timeToDraw--;
+				}
+
+				await player.tcpClientHandler.WriteMessage("SendFrameRequest");
+				await Task.Delay(1000 / 30);
 			}
 
 			// Disable drawing ability
@@ -217,8 +231,8 @@ internal class Lobby
 			// Add score for drawing player
 			player.score += scorePool;
 
-            // Send scores
-            BroadcastPlayerScores();
+			// Send scores
+			BroadcastPlayerScores();
 
 			// Reset if chosen word
 			chosenWord = false;
@@ -301,7 +315,7 @@ internal class Lobby
 		foreach (GameClientHandler player in players)
 			playerList += $"({player.tcpClientHandler.Username},{player.score}),";
 
-        foreach (GameClientHandler player in players)
+		foreach (GameClientHandler player in players)
 			_ = player.tcpClientHandler.WriteMessage(playerList);
 	}
 
@@ -323,23 +337,23 @@ internal class Lobby
 				return;
 			}
 
-			DecodePlayerMessage(tcpClientHandler, msg);
+			await DecodePlayerMessage(tcpClientHandler, msg);
 		}
 	}
 
 	private async void PeriodicHostAliveCheck()
 	{
-		while (LobbyAlive)
-		{
-			if (!await host.WriteMessage("ALIVECHECK"))
-			{
-				CloseLobby();
-				break;
-			}
-
-			// Wait 0.5 seconds before asking again
-			await Task.Delay(500);
-		}
+		//while (LobbyAlive)
+		//{
+		//	if (!await host.WriteMessage("ALIVECHECK"))
+		//	{
+		//		CloseLobby();
+		//		break;
+		//	}
+		//
+		//	// Wait 0.5 seconds before asking again
+		//	await Task.Delay(500);
+		//}
 	}
 
 	private void CloseLobby()

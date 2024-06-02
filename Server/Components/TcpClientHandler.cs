@@ -92,7 +92,7 @@ internal class TcpClientHandler
 			byte[] encryptedReadBuffer = await UnsafeReadBytes();
 			byte[] readBuffer = encryption.DecryptAes(encryptedReadBuffer);
 
-            return Encoding.UTF8.GetString(readBuffer);
+			return Encoding.UTF8.GetString(readBuffer);
 		}
 		catch { disconnectedCts.Cancel(); return null; }
 	}
@@ -149,28 +149,20 @@ internal class TcpClientHandler
 		Array.Copy(length, 0, prefixedBuffer, 0, sizeof(int));
 		Array.Copy(writeBuffer, 0, prefixedBuffer, sizeof(int), writeBuffer.Length);
 
-		try
-		{
-			await networkStream.WriteAsync(prefixedBuffer, disconnectedCts.Token);
-		}
-		catch { throw; }
+		await networkStream.WriteAsync(prefixedBuffer, disconnectedCts.Token);
 	}
 
 	public async Task<byte[]> UnsafeReadBytes()
 	{
 		byte[] readBufer;
 		int bytesRead;
-		try
-		{
-			// Reads 4 Bytes Indicating Message Length
-			byte[] lengthBuffer = new byte[4];
-			await networkStream.ReadAsync(lengthBuffer, disconnectedCts.Token);
+		// Reads 4 Bytes Indicating Message Length
+		byte[] lengthBuffer = new byte[4];
+		await networkStream.ReadAsync(lengthBuffer, disconnectedCts.Token);
 
-			int length = BitConverter.ToInt32(lengthBuffer);
-			readBufer = new byte[length];
-			bytesRead = await networkStream.ReadAsync(readBufer, disconnectedCts.Token);
-		}
-		catch { throw; }
+		int length = BitConverter.ToInt32(lengthBuffer);
+		readBufer = new byte[length];
+		bytesRead = await networkStream.ReadAsync(readBufer, disconnectedCts.Token);
 
 		if (bytesRead == 0)
 			throw new Exception();

@@ -1,20 +1,18 @@
-﻿using System.Net;
+﻿using Settings;
+using System.Net;
 using System.Net.Mail;
 
 namespace Server.Components;
 
 internal static class EmailSender
 {
-	private const string Email = "yonatan005ziv@gmail.com";
-	private const string Password = "dtey faoq abon ndmr";
-
 	private static readonly SmtpClient smtpClient = new SmtpClient("smtp.gmail.com");
 
 	static EmailSender()
 	{
 		smtpClient.UseDefaultCredentials = false;
 		smtpClient.Port = 587;
-		smtpClient.Credentials = new NetworkCredential(Email, Password);
+		smtpClient.Credentials = new NetworkCredential(Configuration.EmailHost, Configuration.EmailPassword);
 		smtpClient.EnableSsl = true;
 	}
 
@@ -22,9 +20,9 @@ internal static class EmailSender
 	{
 		try
 		{
-			smtpClient.Send(Email, email, subject, body);
+			smtpClient.Send(Configuration.EmailHost, email, subject, body);
 			return true;
 		}
-		catch(Exception ex) { return false; }
+		catch (Exception ex) { return false; }
 	}
 }

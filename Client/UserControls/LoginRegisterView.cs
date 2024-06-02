@@ -1,18 +1,19 @@
 ﻿using Client.Components;
+using Settings;
 using System.Net.Sockets;
 
 namespace Client.UserControls;
 
 public partial class LoginRegisterUserControl : UserControl
 {
-	private const string ServerIp = "127.0.0.1";
-	private const int ServerPort = 5000;
-
 	private TcpClientHandler tcpClientHandler;
 
 	public LoginRegisterUserControl()
 	{
 		InitializeComponent();
+
+		register2FAField.Visible = false;
+		register2FAButton.Visible = false;
 	}
 
 
@@ -21,7 +22,7 @@ public partial class LoginRegisterUserControl : UserControl
 		loginButton.Enabled = false;
 
 		tcpClientHandler = new TcpClientHandler(new TcpClient());
-		if (!await tcpClientHandler.Connect(ServerIp, ServerPort))
+		if (!await tcpClientHandler.Connect(Configuration.ServerIp, Configuration.ServerPort))
 		{
 			MessageBox.Show("Couldn't connect to server");
 			loginButton.Enabled = true;
@@ -63,7 +64,7 @@ public partial class LoginRegisterUserControl : UserControl
 		registerButton.Enabled = false;
 
 		tcpClientHandler = new TcpClientHandler(new TcpClient());
-		if (!await tcpClientHandler.Connect(ServerIp, ServerPort))
+		if (!await tcpClientHandler.Connect(Configuration.ServerIp, Configuration.ServerPort))
 		{
 			MessageBox.Show("Couldn't connect to server");
 			loginButton.Enabled = true;
@@ -88,12 +89,19 @@ public partial class LoginRegisterUserControl : UserControl
 			string result = response.Split(':')[1];
 			if (result == "UsernameFound")
 				MessageBox.Show("Username already exists");
+			else if (result == "EmailFound")
+				MessageBox.Show("Email already exists");
 			else if (result == "PasswordTooShort")
 				MessageBox.Show("Password is too short");
 			else if (result == "InvalidEmail")
 				MessageBox.Show("Email is not valid");
 			else if (result == "ValidateEmail")
+			{
+				register2FAField.Visible = true;
+				register2FAButton.Visible = true;
+				register2FAField.Text = "";
 				MessageBox.Show("Please check your email inbox");
+			}
 		}
 
 		registerButton.Enabled = true;
@@ -121,7 +129,11 @@ public partial class LoginRegisterUserControl : UserControl
 			if (result == "WrongCode")
 				MessageBox.Show("Wrong 2FA Code");
 			else if (result == "RegisterSuccessful")
+			{
+				register2FAField.Visible = false;
+				register2FAButton.Visible = false;
 				MessageBox.Show("Successfully registered");
+			}
 		}
 
 		register2FAButton.Enabled = true;

@@ -1,7 +1,4 @@
-﻿
-using System.Runtime.CompilerServices;
-
-namespace Server.Components;
+﻿namespace Server.Components;
 
 internal static class WordBank
 {
@@ -9,7 +6,7 @@ internal static class WordBank
 	static WordBank()
 	{
 		words = File.ReadAllLines(@"Components\Words.txt");
-    }
+	}
 
 	public static string[] GetRandomWords(int count)
 	{

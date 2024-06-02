@@ -12,7 +12,7 @@
 
 		private void startGameButton_Click(object sender, EventArgs e)
 		{
-			if(!int.TryParse(timeToDrawTextBox.Text, out int timeToDraw))
+			if (!int.TryParse(timeToDrawTextBox.Text, out int timeToDraw))
 			{
 				MessageBox.Show("Invalid time to draw!");
 				return;

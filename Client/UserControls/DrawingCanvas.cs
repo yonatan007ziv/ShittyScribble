@@ -4,7 +4,7 @@ namespace Client.UserControls;
 
 public partial class DrawingCanvas : UserControl
 {
-	private readonly Graphics graphics,bGraphics;
+	private readonly Graphics graphics, bGraphics;
 	private readonly Bitmap bitmap;
 	private readonly Pen pen;
 

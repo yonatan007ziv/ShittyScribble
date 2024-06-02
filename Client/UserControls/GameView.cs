@@ -9,7 +9,6 @@ internal partial class GameView : UserControl
 	private HostOptionsArea? hostAreaOptions;
 
 	private string[] playerNames = Array.Empty<string>();
-	private bool draw;
 
 	public GameView(TcpClientHandler tcpClientHandler)
 	{
@@ -45,13 +44,12 @@ internal partial class GameView : UserControl
 
 		string text = chatTextBox.Text;
 		chatTextBox.Text = "";
-		if(!await tcpClientHandler.WriteMessage($"SendMessage:{text}"))
+		if (!await tcpClientHandler.WriteMessage($"SendMessage:{text}"))
 			OnNetworkError();
 	}
 
 	private void OnNetworkError()
 	{
-		draw = false;
 		inGame = false;
 		MessageBox.Show("Network error occurred");
 		MainForm.Instance.NavigateTo(new LoginRegisterUserControl());
@@ -81,15 +79,15 @@ internal partial class GameView : UserControl
 			if (msg is null)
 				break;
 
-			DecodeMessage(msg);
+			await DecodeMessage(msg);
 		}
 	}
 
-	private async void DecodeMessage(string msg)
+	private async Task DecodeMessage(string msg)
 	{
-        await Console.Out.WriteLineAsync($"Received message: {msg}");
+		await Console.Out.WriteLineAsync($"Received message: {msg}");
 
-        if (msg.Contains("SendingFrame"))
+		if (msg.Contains("SendingFrame"))
 			await ReadFrameData();
 		if (msg == "LobbyClosed")
 			MainForm.Instance.NavigateTo(new LoginRegisterUserControl());
@@ -118,7 +116,9 @@ internal partial class GameView : UserControl
 		else if (msg.Contains("Winner"))
 			EndGameDisplayWinner(msg.Split(":")[1]);
 		else if (msg.Contains("EnableCanvas"))
-			EnableCanvasAndShare();
+			EnableCanvas();
+		else if (msg.Contains("SendFrameRequest"))
+			SendFrameData();
 		else if (msg.Contains("DisableCanvas"))
 			DisableCanvasAndShare();
 		else if (msg.Contains("EnableChat"))
@@ -154,6 +154,27 @@ internal partial class GameView : UserControl
 		MessageBox.Show($"The winner is: {winner}");
 		MainForm.Instance.NavigateTo(new LoginRegisterUserControl());
 		inGame = false;
+	}
+
+	private async void SendFrameData()
+	{
+		byte[]? bytes = drawingCanvas.GetFrame();
+		if (bytes is not null)
+		{
+			if (!await tcpClientHandler.WriteMessage($"SendingFrame"))
+			{
+				Console.WriteLine("Error sending frame header");
+				OnNetworkError();
+				return;
+			}
+
+			if (!await tcpClientHandler.WriteBytes(bytes))
+			{
+				Console.WriteLine("Error sending frame data");
+				OnNetworkError();
+				return;
+			}
+		}
 	}
 
 	private async Task ReadFrameData()
@@ -217,37 +238,11 @@ internal partial class GameView : UserControl
 	{
 		currentlyDrawingLabel.Text = "";
 		drawingCanvas.SetCanvasEnabled(false);
-		draw = false;
 	}
 
-	private async void EnableCanvasAndShare()
+	private void EnableCanvas()
 	{
 		drawingCanvas.SetCanvasEnabled(true);
-		draw = true;
-
-		while (draw)
-		{
-			byte[]? bytes = drawingCanvas.GetFrame();
-			if (bytes is not null)
-			{
-				if (!await tcpClientHandler.WriteMessage($"SendingFrame"))
-				{
-					Console.WriteLine("Error sending frame header");
-					OnNetworkError();
-					return;
-				}
-
-				if (!await tcpClientHandler.WriteBytes(bytes))
-				{
-					Console.WriteLine("Error sending frame data");
-					OnNetworkError();
-					return;
-				}
-			}
-
-			// Send 15 frames a second
-			await Task.Delay(1000 / 30);
-		}
 	}
 
 	private void EnableYourTurn(string wordList)
